@@ -10,8 +10,8 @@
 #define SSID     "2G_KZMNDS"
 #define WIFI_PASSWD "mnds190518"
 
-/** Collect Sensor Interval = 1 min **/
-#define COLLECT_TIME 60000
+/** Collect Sensor Interval = 10 min **/
+#define COLLECT_TIME 600000
 
 //INFURA
 #define INFURA_HOST "rinkeby.infura.io"
@@ -65,6 +65,9 @@ void setup()
 void loop() 
 {
   sensorCollectData();
+
+  sendDataToSamartContract(formatDataToSend().c_str());
+
   Serial.println(formatDataToSend().c_str());
 
   epochTime = getTime();
@@ -139,6 +142,8 @@ string formatDataToSend()
 
 void sendDataToSamartContract(string measure)
 {
+  string _measure = measure;
+
   Contract contract(&web3, CONTRACT_ADDRESS);
   contract.SetPrivateKey(private_key);
   string addr = MY_ADDRESS;
@@ -149,7 +154,7 @@ void sendDataToSamartContract(string measure)
   uint32_t  gasLimitVal = 80000;
 
   //string p = contract.SetupContractData("setMeasure(string)", measure);
-  string p = contract.SetupContractData(SET_MEASURE, measure);
+  string p = contract.SetupContractData(SET_MEASURE, _measure);
 
   string contractAddr = CONTRACT_ADDRESS;
   uint256_t weiValue = 000000000000000;
