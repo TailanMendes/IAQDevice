@@ -10,7 +10,8 @@
 #define SSID     "2G_KZMNDS"
 #define WIFI_PASSWD "mnds190518"
 
-#define COLLECT_TIME 3000
+/** Collect Sensor Interval = 1 min **/
+#define COLLECT_TIME 60000
 
 //INFURA
 #define INFURA_HOST "rinkeby.infura.io"
@@ -67,8 +68,8 @@ void loop()
   Serial.println(formatDataToSend().c_str());
 
   epochTime = getTime();
-  Serial.print("Epoch Time: ");
-  Serial.println(epochTime);
+  //Serial.print("Epoch Time: ");
+  //Serial.println(epochTime);
 
   delay(COLLECT_TIME);
 }
