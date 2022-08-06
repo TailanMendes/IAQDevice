@@ -1,10 +1,13 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <Web3.h>
+#include "ClosedCube_HDC1080.h"
 
 //WIFI
 #define SSID     "2G_KZMNDS"
 #define WIFI_PASSWD "mnds190518"
+
+#define COLLECT_TIME 3000
 
 //INFURA
 #define INFURA_HOST "rinkeby.infura.io"
@@ -19,7 +22,40 @@
 /** MetaMask Private Key **/
 const char* private_key = "8dafbc49423c21e71c778421e7a6b30fac6702390b47bd9e37e2969f5df1fd1d";
 
+ClosedCube_HDC1080 hdc1080;
 int wifi_counter = 0;
+
+double temperature;
+double humidity;
+
+void setupWiFI();
+void sensorCollectData();
+
+void setup() 
+{
+  Serial.begin(115200);
+
+  setupWiFI();
+
+  // Default settings: 
+	//  - Heater off
+	//  - 14 bit Temperature and Humidity Measurement Resolutions
+	hdc1080.begin(0x40);
+
+}
+
+void loop() 
+{
+  sensorCollectData();
+
+  Serial.print("T=");
+  Serial.print(temperature);
+  Serial.print("C, RH=");
+	Serial.print(humidity);
+	Serial.println("%");
+
+  delay(COLLECT_TIME);
+}
 
 void setupWiFI()
 {
@@ -66,15 +102,8 @@ void setupWiFI()
     Serial.println(WiFi.localIP());
 }
 
-void setup() 
+void sensorCollectData()
 {
-  Serial.begin(115200);
-
-  setupWiFI();
-
-}
-
-void loop() 
-{
-  
+    temperature = hdc1080.readTemperature();
+    humidity = hdc1080.readHumidity();
 }
