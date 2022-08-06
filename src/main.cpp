@@ -4,6 +4,7 @@
 #include "ClosedCube_HDC1080.h"
 #include <iomanip>
 #include <sstream>
+#include "time.h"
 
 //WIFI
 #define SSID     "2G_KZMNDS"
@@ -30,6 +31,10 @@ const char* private_key = "8dafbc49423c21e71c778421e7a6b30fac6702390b47bd9e37e29
 ClosedCube_HDC1080 hdc1080;
 int wifi_counter = 0;
 
+// NTP server to request epoch time
+const char* ntpServer = "pool.ntp.org";
+unsigned long epochTime;
+
 double temperature;
 double humidity;
 
@@ -37,6 +42,7 @@ void setupWiFI();
 void sensorCollectData();
 void sendDataToSamartContract(string measure);
 string formatDataToSend();
+unsigned long getTime(); 
 
 Web3 web3(INFURA_HOST, INFURA_PATH);
 
@@ -45,6 +51,8 @@ void setup()
   Serial.begin(115200);
 
   setupWiFI();
+
+  configTime(0, 0, ntpServer);
 
   // Default settings: 
 	//  - Heater off
@@ -58,13 +66,10 @@ void loop()
   sensorCollectData();
   Serial.println(formatDataToSend().c_str());
 
-  /*
-  Serial.print("T=");
-  Serial.print(temperature);
-  Serial.print("C, RH=");
-	Serial.print(humidity);
-	Serial.println("%");
-  */
+  epochTime = getTime();
+  Serial.print("Epoch Time: ");
+  Serial.println(epochTime);
+
   delay(COLLECT_TIME);
 }
 
@@ -124,7 +129,7 @@ string formatDataToSend()
   stringstream fmeasure;
 
   // Converting double to string and setting precision 2 decimal
-  fmeasure << std::fixed << std::setprecision(2) << temperature << "|" << humidity;
+  fmeasure << std::fixed << std::setprecision(2) << temperature << "|" << humidity << "|" << to_string(getTime());
 
   //sensor_data = to_string(temperature) + "|" + to_string(humidity); // timestamp
 
@@ -150,4 +155,16 @@ void sendDataToSamartContract(string measure)
 
   string result = contract.SendTransaction(nonceVal, gasPriceVal, gasLimitVal, &contractAddr, &weiValue, &p);
 
+}
+
+/** Get EPOCH time **/
+unsigned long getTime() {
+  time_t now;
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    Serial.println("Failed to obtain time");
+    return(0);
+  }
+  time(&now);
+  return now;
 }
