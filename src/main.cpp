@@ -11,7 +11,7 @@
 #define WIFI_PASSWD "mnds190518"
 
 /** Collect Sensor Interval = 10 min **/
-#define COLLECT_TIME 600000
+#define COLLECT_TIME 180000
 
 //INFURA
 #define INFURA_HOST "rinkeby.infura.io"
