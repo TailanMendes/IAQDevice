@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <Web3.h>
 #include "ClosedCube_HDC1080.h"
+#include <Adafruit_BMP280.h>
 #include <iomanip>
 #include <sstream>
 #include "time.h"
@@ -30,6 +31,7 @@
 const char* private_key = "8dafbc49423c21e71c778421e7a6b30fac6702390b47bd9e37e2969f5df1fd1d";
 
 ClosedCube_HDC1080 hdc1080;
+Adafruit_BMP280 bmp;
 int wifi_counter = 0;
 
 // NTP server to request epoch time
@@ -38,6 +40,7 @@ unsigned long epochTime;
 
 double temperature;
 double humidity;
+float pressure;
 
 void setupWiFI();
 void sensorCollectData();
@@ -59,6 +62,15 @@ void setup()
 	//  - Heater off
 	//  - 14 bit Temperature and Humidity Measurement Resolutions
 	hdc1080.begin(0x40);
+
+  bmp.begin(BMP280_ADDRESS_ALT, BMP280_CHIPID);
+
+  /** Default settings from datasheet **/
+  bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,     /* Operating Mode. */
+                  Adafruit_BMP280::SAMPLING_X2,     /* Temp. oversampling */
+                  Adafruit_BMP280::SAMPLING_X16,    /* Pressure oversampling */
+                  Adafruit_BMP280::FILTER_X16,      /* Filtering. */
+                  Adafruit_BMP280::STANDBY_MS_500); /* Standby time. */
 
 }
 
@@ -126,6 +138,7 @@ void sensorCollectData()
 {
     temperature = hdc1080.readTemperature();
     humidity = hdc1080.readHumidity();
+    pressure = bmp.readPressure();
 }
 
 string formatDataToSend()
