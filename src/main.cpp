@@ -5,6 +5,9 @@
 #include <iomanip>
 #include <sstream>
 #include "time.h"
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include "Adafruit_CCS811.h"
 
 //WIFI
 #define SSID     "2G_KZMNDS"
@@ -30,6 +33,7 @@
 const char* private_key = "8dafbc49423c21e71c778421e7a6b30fac6702390b47bd9e37e2969f5df1fd1d";
 
 ClosedCube_HDC1080 hdc1080;
+Adafruit_CCS811 ccs;
 int wifi_counter = 0;
 
 // NTP server to request epoch time
@@ -38,6 +42,8 @@ unsigned long epochTime;
 
 double temperature;
 double humidity;
+uint16_t co2;
+uint16_t tvoc;
 
 void setupWiFI();
 void sensorCollectData();
@@ -59,6 +65,14 @@ void setup()
 	//  - Heater off
 	//  - 14 bit Temperature and Humidity Measurement Resolutions
 	hdc1080.begin(0x40);
+
+  if(!ccs.begin()){
+    Serial.println("Failed to start sensor! Please check your wiring.");
+    while(1);
+  }
+
+  // Wait for the sensor to be ready
+  while(!ccs.available());
 }
 
 void loop() 
@@ -125,6 +139,20 @@ void sensorCollectData()
 {
     temperature = hdc1080.readTemperature();
     humidity = hdc1080.readHumidity();
+    
+    if(ccs.available())
+    {
+      if(!ccs.readData()){
+        
+        co2 = ccs.geteCO2();
+        
+        tvoc = ccs.getTVOC();
+      }
+      else{
+        Serial.println("ERROR!");
+        //while(1); // revisar se é necessário
+      }
+    } 
 }
 
 string formatDataToSend()
@@ -132,7 +160,7 @@ string formatDataToSend()
   stringstream fmeasure;
 
   // Converting double to string and setting precision 2 decimal
-  fmeasure << std::fixed << std::setprecision(2) << temperature << "|" << humidity << "|" << to_string(getTime());
+  fmeasure << std::fixed << std::setprecision(2) << temperature << "|" << humidity << "|" << co2 << "|" << tvoc << "|" << to_string(getTime());
 
   //sensor_data = to_string(temperature) + "|" + to_string(humidity); // timestamp
 
