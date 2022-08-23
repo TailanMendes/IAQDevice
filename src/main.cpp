@@ -10,10 +10,10 @@
 #include "Adafruit_CCS811.h"
 
 //WIFI
-#define SSID     "2G_KZMNDS"
+#define SSID     "KZMNDS_2G"
 #define WIFI_PASSWD "mnds190518"
 
-/** Collect Sensor Interval = 10 min **/
+/** Collect Sensor Interval = 3 min **/
 #define COLLECT_TIME 180000
 
 //INFURA
@@ -31,6 +31,15 @@
 
 /** MetaMask Private Key **/
 const char* private_key = "8dafbc49423c21e71c778421e7a6b30fac6702390b47bd9e37e2969f5df1fd1d";
+
+int pinVout2 = 4; // Vout 2 (Pin #2) from DSM501A - particles over 1 micrometer
+unsigned long pulseInLow; // the length of the pulse in LOW in microseconds 
+
+unsigned long starttime;
+unsigned long sampletime_ms = 30000; // 30 seconds
+unsigned long sumTimeOfLow = 0;
+float low_ratio = 0;
+float concentration = 0; // concentration in mg/m3
 
 ClosedCube_HDC1080 hdc1080;
 Adafruit_CCS811 ccs;
@@ -57,6 +66,8 @@ void setup()
 {
   Serial.begin(115200);
 
+  pinMode(4,INPUT);
+
   setupWiFI();
 
   configTime(0, 0, ntpServer);
@@ -73,21 +84,39 @@ void setup()
 
   // Wait for the sensor to be ready
   while(!ccs.available());
+
+  starttime = millis(); // current time in milli seconds
 }
 
 void loop() 
 {
-  sensorCollectData();
 
-  sendDataToSamartContract(formatDataToSend().c_str());
+  pulseInLow = pulseIn(pinVout2, LOW);
+  sumTimeOfLow = sumTimeOfLow + pulseInLow;
 
-  Serial.println(formatDataToSend().c_str());
+  if ((millis()-starttime) > sampletime_ms)
+  {
+    low_ratio = sumTimeOfLow/(sampletime_ms*100.0);
 
-  epochTime = getTime();
-  //Serial.print("Epoch Time: ");
-  //Serial.println(epochTime);
+    Serial.print("Sum time in low: ");
+    Serial.println(sumTimeOfLow);
+    Serial.print("Low ratio: ");
+    Serial.println(low_ratio);
 
-  delay(COLLECT_TIME);
+    concentration = 0.001915*pow(low_ratio,2)+0.09522*low_ratio-0.04884; // using spec sheet curve for mg/m3
+
+    sensorCollectData();
+
+    sendDataToSamartContract(formatDataToSend().c_str());
+
+    Serial.println(formatDataToSend().c_str());
+
+    //epochTime = getTime();
+
+    sumTimeOfLow = 0;
+    starttime = millis();
+  }
+
 }
 
 void setupWiFI()
@@ -160,7 +189,7 @@ string formatDataToSend()
   stringstream fmeasure;
 
   // Converting double to string and setting precision 2 decimal
-  fmeasure << std::fixed << std::setprecision(2) << temperature << "|" << humidity << "|" << co2 << "|" << tvoc << "|" << to_string(getTime());
+  fmeasure << std::fixed << std::setprecision(2) << temperature << "|" << humidity << "|" << co2 << "|" << tvoc << "|" << concentration << "|" << to_string(getTime());
 
   //sensor_data = to_string(temperature) + "|" + to_string(humidity); // timestamp
 
