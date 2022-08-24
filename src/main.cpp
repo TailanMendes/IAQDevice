@@ -24,7 +24,7 @@
 #define MY_ADDRESS "0x8047490dA302959AA294e9d096f2B0803140D63C"
 
 /** Contract Address **/
-#define CONTRACT_ADDRESS "0x194E4A079f507208B544eB8EAd2821e3Daa6a8C5"
+#define CONTRACT_ADDRESS "0x495498a9F628Ce581AedA1B5bb6e598090717Df7"
 
 /** Smart Contract Functions Signature **/
 #define SET_MEASURE "setMeasure(string)"
@@ -36,7 +36,7 @@ int pinVout2 = 4; // Vout 2 (Pin #2) from DSM501A - particles over 1 micrometer
 unsigned long pulseInLow; // the length of the pulse in LOW in microseconds 
 
 unsigned long starttime;
-unsigned long sampletime_ms = 30000; // 30 seconds
+unsigned long sampletime_ms = 10000; // 10 seconds
 unsigned long sumTimeOfLow = 0;
 float low_ratio = 0;
 float concentration = 0; // concentration in mg/m3
@@ -107,11 +107,11 @@ void loop()
 
     sensorCollectData();
 
+    Serial.println(formatDataToSend().c_str());
+    
     sendDataToSamartContract(formatDataToSend().c_str());
 
-    Serial.println(formatDataToSend().c_str());
-
-    //epochTime = getTime();
+    epochTime = getTime();
 
     sumTimeOfLow = 0;
     starttime = millis();
