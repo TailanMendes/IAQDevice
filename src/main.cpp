@@ -127,7 +127,7 @@ void loop()
     //epochTime = getTime();
 
     pm25_sumTimeOfLow = 0;
-    pm10_concentration = 0;
+    pm10_sumTimeOfLow = 0;
     starttime = millis();
   }
 
