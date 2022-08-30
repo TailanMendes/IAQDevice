@@ -32,14 +32,19 @@
 /** MetaMask Private Key **/
 const char* private_key = "8dafbc49423c21e71c778421e7a6b30fac6702390b47bd9e37e2969f5df1fd1d";
 
-int pinVout2 = 32; // Vout 2 (Pin #2) from DSM501A - particles over 1 micrometer
-unsigned long pulseInLow; // the length of the pulse in LOW in microseconds 
+int pinVout2 = 32; // Vout 2 (default output) (Pin #2) from DSM501A - particles over 1 micrometer
+int pinVout1 = 27; // Vout 1 (Pin #4) from DSM501A - particles over 2.5 micrometer // using this for PM10
+unsigned long pm25_pulseInLow; // the length of the pulse in LOW in microseconds 
+unsigned long pm10_pulseInLow;
 
 unsigned long starttime;
 unsigned long sampletime_ms = 60000; // 1min seconds
-unsigned long sumTimeOfLow = 0;
-float low_ratio = 0;
-float concentration = 0; // concentration in mg/m3
+unsigned long pm25_sumTimeOfLow = 0;
+unsigned long pm10_sumTimeOfLow = 0;
+float pm25_low_ratio = 0;
+float pm10_low_ratio = 0;
+float pm25_concentration = 0; // concentration in mg/m3
+float pm10_concentration = 0; // concentration in mg/m3
 
 ClosedCube_HDC1080 hdc1080;
 Adafruit_CCS811 ccs;
@@ -66,11 +71,12 @@ void setup()
 {
   Serial.begin(115200);
 
-  pinMode(32,INPUT);
+  pinMode(pinVout2,INPUT);
+  pinMode(pinVout1,INPUT);
 
-  setupWiFI();
+  //setupWiFI();
 
-  configTime(0, 0, ntpServer);
+  //configTime(0, 0, ntpServer);
 
   // Default settings: 
 	//  - Heater off
@@ -91,19 +97,26 @@ void setup()
 void loop() 
 {
 
-  pulseInLow = pulseIn(pinVout2, LOW);
-  sumTimeOfLow = sumTimeOfLow + pulseInLow;
+  pm25_pulseInLow = pulseIn(pinVout2, LOW);
+  pm10_pulseInLow = pulseIn(pinVout1, LOW);
+
+  pm25_sumTimeOfLow += pm25_pulseInLow;
+  pm10_sumTimeOfLow += pm10_pulseInLow;
 
   if ((millis()-starttime) > sampletime_ms)
   {
-    low_ratio = sumTimeOfLow/(sampletime_ms*100.0);
+    pm25_low_ratio = pm25_sumTimeOfLow/(sampletime_ms*10.0);
+    pm10_low_ratio = pm10_sumTimeOfLow/(sampletime_ms*10.0);
 
-    Serial.print("Sum time in low: ");
-    Serial.println(sumTimeOfLow);
-    Serial.print("Low ratio: ");
-    Serial.println(low_ratio);
+    //Serial.print("Sum time in low: ");
+    //Serial.println(pm25_sumTimeOfLow);
+    //Serial.print("Low ratio: ");
+    //Serial.println(pm25_low_ratio);
 
-    concentration = 0.001915*pow(low_ratio,2)+0.09522*low_ratio-0.04884; // using spec sheet curve for mg/m3
+    pm25_concentration = 0.001915*pow(pm25_low_ratio,2)+0.09522*pm25_low_ratio-0.04884; // using spec sheet curve for mg/m3
+    pm10_concentration = 0.001915*pow(pm10_low_ratio,2)+0.09522*pm10_low_ratio-0.04884; // using spec sheet curve for mg/m3
+
+    pm25_concentration = pm25_concentration - pm10_concentration; // Descartando particulas maiores de 2.5 micrometro para ter o PM25 (Vout2-Vout1)
 
     sensorCollectData();
 
@@ -111,9 +124,10 @@ void loop()
     
     sendDataToSamartContract(formatDataToSend().c_str());
 
-    epochTime = getTime();
+    //epochTime = getTime();
 
-    sumTimeOfLow = 0;
+    pm25_sumTimeOfLow = 0;
+    pm10_concentration = 0;
     starttime = millis();
   }
 
@@ -189,7 +203,7 @@ string formatDataToSend()
   stringstream fmeasure;
 
   // Converting double to string and setting precision 2 decimal
-  fmeasure << std::fixed << std::setprecision(2) << temperature << "|" << humidity << "|" << co2 << "|" << tvoc << "|" << concentration << "|" << to_string(getTime());
+  fmeasure << std::fixed << std::setprecision(2) << temperature << "|" << humidity << "|" << co2 << "|" << tvoc << "|" << pm25_concentration << "|" << pm10_concentration << "|" << to_string(getTime());
 
   //sensor_data = to_string(temperature) + "|" + to_string(humidity); // timestamp
 
