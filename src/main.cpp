@@ -32,11 +32,11 @@
 /** MetaMask Private Key **/
 const char* private_key = "8dafbc49423c21e71c778421e7a6b30fac6702390b47bd9e37e2969f5df1fd1d";
 
-int pinVout2 = 4; // Vout 2 (Pin #2) from DSM501A - particles over 1 micrometer
+int pinVout2 = 32; // Vout 2 (Pin #2) from DSM501A - particles over 1 micrometer
 unsigned long pulseInLow; // the length of the pulse in LOW in microseconds 
 
 unsigned long starttime;
-unsigned long sampletime_ms = 10000; // 10 seconds
+unsigned long sampletime_ms = 60000; // 1min seconds
 unsigned long sumTimeOfLow = 0;
 float low_ratio = 0;
 float concentration = 0; // concentration in mg/m3
@@ -66,7 +66,7 @@ void setup()
 {
   Serial.begin(115200);
 
-  pinMode(4,INPUT);
+  pinMode(32,INPUT);
 
   setupWiFI();
 
@@ -207,7 +207,7 @@ void sendDataToSamartContract(string measure)
 
   /** Gas settings - REVIEW **/
   unsigned long long gasPriceVal = 2500000008ULL;
-  uint32_t  gasLimitVal = 80000;
+  uint32_t  gasLimitVal = 400000;
 
   //string p = contract.SetupContractData("setMeasure(string)", measure);
   string p = contract.SetupContractData(SET_MEASURE, _measure);
