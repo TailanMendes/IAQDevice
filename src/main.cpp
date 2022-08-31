@@ -10,8 +10,8 @@
 #include "Adafruit_CCS811.h"
 
 //WIFI
-#define SSID     "KZMNDS_2G"
-#define WIFI_PASSWD "mnds190518"
+#define SSID     "SABA MENDES 4G"//"KZMNDS_2G"
+#define WIFI_PASSWD "36715756"//"mnds190518"
 
 /** Collect Sensor Interval = 3 min **/
 #define COLLECT_TIME 180000
@@ -74,9 +74,9 @@ void setup()
   pinMode(pinVout2,INPUT);
   pinMode(pinVout1,INPUT);
 
-  //setupWiFI();
+  setupWiFI();
 
-  //configTime(0, 0, ntpServer);
+  configTime(0, 0, ntpServer);
 
   // Default settings: 
 	//  - Heater off
@@ -116,13 +116,13 @@ void loop()
     pm25_concentration = 0.001915*pow(pm25_low_ratio,2)+0.09522*pm25_low_ratio-0.04884; // using spec sheet curve for mg/m3
     pm10_concentration = 0.001915*pow(pm10_low_ratio,2)+0.09522*pm10_low_ratio-0.04884; // using spec sheet curve for mg/m3
 
-    pm25_concentration = pm25_concentration - pm10_concentration; // Descartando particulas maiores de 2.5 micrometro para ter o PM25 (Vout2-Vout1)
+    //pm25_concentration = pm25_concentration - pm10_concentration; // Descartando particulas maiores de 2.5 micrometro para ter o PM25 (Vout2-Vout1)
 
     sensorCollectData();
 
     Serial.println(formatDataToSend().c_str());
     
-    sendDataToSamartContract(formatDataToSend().c_str());
+    //sendDataToSamartContract(formatDataToSend().c_str());
 
     //epochTime = getTime();
 
