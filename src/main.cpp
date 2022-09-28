@@ -110,18 +110,18 @@ void loop()
 
   if ((millis()-starttime) > collect_time)
   {
-    pm25_low_ratio = pm25_sumTimeOfLow/(collect_time*10.0);
-    pm10_low_ratio = pm10_sumTimeOfLow/(collect_time*10.0);
+    pm25_low_ratio = pm25_sumTimeOfLow/((collect_time)*10.0);
+    pm10_low_ratio = pm10_sumTimeOfLow/((collect_time)*10.0);
 
     //Serial.print("Sum time in low: ");
     //Serial.println(pm25_sumTimeOfLow);
     //Serial.print("Low ratio: ");
     //Serial.println(pm25_low_ratio);
 
-    pm25_concentration = (0.001915*pow(pm25_low_ratio,2)+0.09522*pm25_low_ratio-0.04884) / 100.0; // com base na curva característica do datasheet 
-    pm10_concentration = (0.001915*pow(pm10_low_ratio,2)+0.09522*pm10_low_ratio-0.04884) /100.0; 
+    pm25_concentration = (0.001915*pow(pm25_low_ratio,2)+0.09522*pm25_low_ratio-0.04884) * 100; // com base na curva característica do datasheet 
+    pm10_concentration = (0.001915*pow(pm10_low_ratio,2)+0.09522*pm10_low_ratio-0.04884) * 100; 
     
-    //pm25_concentration = pm25_concentration - pm10_concentration; // Descartando particulas maiores de 2.5 micrometro para ter o PM25 (Vout2-Vout1)
+    pm25_concentration = pm25_concentration - pm10_concentration; // Descartando particulas maiores de 2.5 micrometro para ter o PM25 (Vout2-Vout1)
 
     sensorCollectData();
 
@@ -208,8 +208,9 @@ string formatDataToSend()
   stringstream fmeasure;
 
   // Converting double to string and setting precision 2 decimal
-  fmeasure << std::fixed << std::setprecision(2) << temperature << "|" << humidity;// << "|" << co2 << "|" << tvoc << "|" << pm25_concentration << "|" << pm10_concentration << "|" << to_string(getTime());
-  fmeasure << std::fixed << std::setprecision(3) << "|" << co2 << "|" << tvoc << "|" << pm25_concentration << "|" << pm10_concentration << "|" << to_string(getTime());
+  fmeasure << std::fixed << std::setprecision(2) << temperature << "|" << humidity << "|" << co2; // "|" << tvoc << "|" << pm25_concentration << "|" << pm10_concentration << "|" << to_string(getTime());
+  fmeasure << std::fixed << std::setprecision(3) << "|" << tvoc;
+  fmeasure << std::fixed << std::setprecision(1) << "|" << pm25_concentration << "|" << pm10_concentration << "|" << to_string(getTime());
   //sensor_data = to_string(temperature) + "|" + to_string(humidity); // timestamp
 
   return fmeasure.str();
