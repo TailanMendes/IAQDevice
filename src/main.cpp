@@ -8,13 +8,14 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include "Adafruit_CCS811.h"
+#include <esp_task_wdt.h>
 
 //WIFI
-#define SSID     "SABA MENDES 4G"//"KZMNDS_2G"
-#define WIFI_PASSWD "36715756"//"mnds190518"
+#define SSID     "KZMNDS_2G"
+#define WIFI_PASSWD "mnds190518"
 
 /** Collect Sensor Interval = 3 min **/
-#define COLLECT_TIME 180000
+//#define COLLECT_TIME 180000
 
 //INFURA
 #define INFURA_HOST "rinkeby.infura.io"
@@ -24,7 +25,8 @@
 #define MY_ADDRESS "0x8047490dA302959AA294e9d096f2B0803140D63C"
 
 /** Contract Address **/
-#define CONTRACT_ADDRESS "0x495498a9F628Ce581AedA1B5bb6e598090717Df7"
+//#define CONTRACT_ADDRESS "0x495498a9F628Ce581AedA1B5bb6e598090717Df7"
+#define CONTRACT_ADDRESS "0x2373A3C243ba60D47629aFF80020291529e929Ae"
 
 /** Smart Contract Functions Signature **/
 #define SET_MEASURE "setMeasure(string)"
@@ -37,8 +39,11 @@ int pinVout1 = 27; // Vout 1 (Pin #4) from DSM501A - particles over 2.5 micromet
 unsigned long pm25_pulseInLow; // the length of the pulse in LOW in microseconds 
 unsigned long pm10_pulseInLow;
 
+/** Collect Sensor Interval = 1 min **/
+unsigned long collect_time = 60000;
+
 unsigned long starttime;
-unsigned long sampletime_ms = 60000; // 1min seconds
+//unsigned long sampletime_ms = 60000; // 1min seconds
 unsigned long pm25_sumTimeOfLow = 0;
 unsigned long pm10_sumTimeOfLow = 0;
 float pm25_low_ratio = 0;
@@ -57,7 +62,7 @@ unsigned long epochTime;
 double temperature;
 double humidity;
 uint16_t co2;
-uint16_t tvoc;
+double tvoc;
 
 void setupWiFI();
 void sensorCollectData();
@@ -103,26 +108,26 @@ void loop()
   pm25_sumTimeOfLow += pm25_pulseInLow;
   pm10_sumTimeOfLow += pm10_pulseInLow;
 
-  if ((millis()-starttime) > sampletime_ms)
+  if ((millis()-starttime) > collect_time)
   {
-    pm25_low_ratio = pm25_sumTimeOfLow/(sampletime_ms*10.0);
-    pm10_low_ratio = pm10_sumTimeOfLow/(sampletime_ms*10.0);
+    pm25_low_ratio = pm25_sumTimeOfLow/(collect_time*10.0);
+    pm10_low_ratio = pm10_sumTimeOfLow/(collect_time*10.0);
 
     //Serial.print("Sum time in low: ");
     //Serial.println(pm25_sumTimeOfLow);
     //Serial.print("Low ratio: ");
     //Serial.println(pm25_low_ratio);
 
-    pm25_concentration = 0.001915*pow(pm25_low_ratio,2)+0.09522*pm25_low_ratio-0.04884; // using spec sheet curve for mg/m3
-    pm10_concentration = 0.001915*pow(pm10_low_ratio,2)+0.09522*pm10_low_ratio-0.04884; // using spec sheet curve for mg/m3
-
+    pm25_concentration = (0.001915*pow(pm25_low_ratio,2)+0.09522*pm25_low_ratio-0.04884) / 100.0; // com base na curva característica do datasheet 
+    pm10_concentration = (0.001915*pow(pm10_low_ratio,2)+0.09522*pm10_low_ratio-0.04884) /100.0; 
+    
     //pm25_concentration = pm25_concentration - pm10_concentration; // Descartando particulas maiores de 2.5 micrometro para ter o PM25 (Vout2-Vout1)
 
     sensorCollectData();
 
     Serial.println(formatDataToSend().c_str());
     
-    //sendDataToSamartContract(formatDataToSend().c_str());
+    sendDataToSamartContract(formatDataToSend().c_str());
 
     //epochTime = getTime();
 
@@ -189,7 +194,7 @@ void sensorCollectData()
         
         co2 = ccs.geteCO2();
         
-        tvoc = ccs.getTVOC();
+        tvoc = ccs.getTVOC() / 1000.0; // convert to PPM
       }
       else{
         Serial.println("ERROR!");
@@ -203,11 +208,11 @@ string formatDataToSend()
   stringstream fmeasure;
 
   // Converting double to string and setting precision 2 decimal
-  fmeasure << std::fixed << std::setprecision(2) << temperature << "|" << humidity << "|" << co2 << "|" << tvoc << "|" << pm25_concentration << "|" << pm10_concentration << "|" << to_string(getTime());
-
+  fmeasure << std::fixed << std::setprecision(2) << temperature << "|" << humidity;// << "|" << co2 << "|" << tvoc << "|" << pm25_concentration << "|" << pm10_concentration << "|" << to_string(getTime());
+  fmeasure << std::fixed << std::setprecision(3) << "|" << co2 << "|" << tvoc << "|" << pm25_concentration << "|" << pm10_concentration << "|" << to_string(getTime());
   //sensor_data = to_string(temperature) + "|" + to_string(humidity); // timestamp
 
-  return fmeasure.str();;
+  return fmeasure.str();
 }
 
 void sendDataToSamartContract(string measure)
