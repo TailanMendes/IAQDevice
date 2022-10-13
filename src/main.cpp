@@ -18,15 +18,19 @@
 //#define COLLECT_TIME 180000
 
 //INFURA
-#define INFURA_HOST "rinkeby.infura.io"
-#define INFURA_PATH "/v3/ea9cd517fe4c4782a5f7ee526a578ec5"
+//#define INFURA_HOST "rinkeby.infura.io"
+#define INFURA_HOST "goerli.infura.io"
+
+#define INFURA_PATH "/v3/a9990f8e3c9346bf9bfea9becf0ab989"
 
 /** METAMASK ADDRESS **/
 #define MY_ADDRESS "0x8047490dA302959AA294e9d096f2B0803140D63C"
 
 /** Contract Address **/
-//#define CONTRACT_ADDRESS "0x495498a9F628Ce581AedA1B5bb6e598090717Df7"
-#define CONTRACT_ADDRESS "0x2373A3C243ba60D47629aFF80020291529e929Ae"
+//#define CONTRACT_ADDRESS "0x8398bd7656e8e3ca4Ca8F35445530292368fc1c9"
+
+// TESTE GOERLI
+#define CONTRACT_ADDRESS "0xD2B6b56558cfd776B8671580fa298E93b00ecA9E"
 
 /** Smart Contract Functions Signature **/
 #define SET_MEASURE "setMeasure(string)"
@@ -79,6 +83,8 @@ void setup()
   pinMode(pinVout2,INPUT);
   pinMode(pinVout1,INPUT);
 
+  WiFi.disconnect(true);
+
   setupWiFI();
 
   configTime(0, 0, ntpServer);
@@ -110,6 +116,13 @@ void loop()
 
   if ((millis()-starttime) > collect_time)
   {
+
+    if (WiFi.status() != WL_CONNECTED)
+    {
+      WiFi.disconnect();
+      WiFi.reconnect();
+    }
+
     pm25_low_ratio = pm25_sumTimeOfLow/((collect_time)*10.0);
     pm10_low_ratio = pm10_sumTimeOfLow/((collect_time)*10.0);
 
@@ -118,18 +131,16 @@ void loop()
     //Serial.print("Low ratio: ");
     //Serial.println(pm25_low_ratio);
 
-    pm25_concentration = (0.001915*pow(pm25_low_ratio,2)+0.09522*pm25_low_ratio-0.04884) * 100; // com base na curva característica do datasheet 
+    pm25_concentration = (0.001915*pow(pm25_low_ratio,2)+0.09522*pm25_low_ratio-0.04884) * 10; // com base na curva característica do datasheet 
     pm10_concentration = (0.001915*pow(pm10_low_ratio,2)+0.09522*pm10_low_ratio-0.04884) * 100; 
-    
-    pm25_concentration = pm25_concentration - pm10_concentration; // Descartando particulas maiores de 2.5 micrometro para ter o PM25 (Vout2-Vout1)
+
+    //pm25_concentration = (pm25_concentration - pm10_concentration) * 0.1; // Descartando particulas maiores de 2.5 micrometro para ter o PM25 (Vout2-Vout1)
 
     sensorCollectData();
 
     Serial.println(formatDataToSend().c_str());
     
     sendDataToSamartContract(formatDataToSend().c_str());
-
-    //epochTime = getTime();
 
     pm25_sumTimeOfLow = 0;
     pm10_sumTimeOfLow = 0;
